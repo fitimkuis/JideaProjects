@@ -1,12 +1,16 @@
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.StandardDecryptionMaterial;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.rendering.ImageType;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.*;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.*;
 import java.util.List;
 
@@ -61,6 +65,105 @@ public class ScreenshotFromPdf {
         }
         document.close();
         driver.close();
+    }
+
+    public static void Pdf2Image3(String html, WebDriver driver) throws IOException, InterruptedException {
+
+        Thread.sleep(5000);
+        URL url1 = new URL(html);
+
+        byte[] ba1 = new byte[1024];
+        int baLength;
+
+        String downPath = "C:\\Users\\timok\\Downloads";
+
+        try {
+            // Contacting the URL
+            System.out.print("Connecting to " + url1.toString() + " ... ");
+            URLConnection urlConn = url1.openConnection();
+
+            FileOutputStream fos1 = new FileOutputStream(downPath+"/samplePDF.pdf");
+
+            BufferedInputStream in = new BufferedInputStream(new URL(html).openStream());
+            FileOutputStream fileOutputStream = new FileOutputStream(downPath+"/samplePDF.pdf");
+            byte dataBuffer[] = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                fileOutputStream.write(dataBuffer, 0, bytesRead);
+            }
+            in.close();
+            fileOutputStream.close();
+
+            // Checking whether the URL contains a PDF
+            //if (!urlConn.getContentType().equalsIgnoreCase("application/pdf")) {
+            if (url1.equals("")) {
+                System.out.println("FAILED.\n[Sorry. This is not a PDF.]");
+            } else {
+                try {
+
+                    // Read the PDF from the URL and save to a local file
+                    InputStream is1 = url1.openStream();
+                    while ((baLength = is1.read(ba1)) != -1) {
+                        fos1.write(ba1, 0, baLength);
+                    }
+                    fos1.flush();
+                    fos1.close();
+                    is1.close();
+
+                    // Load the PDF document and display its page count
+                    System.out.print("DONE.\nProcessing the PDF ... ");
+
+                    PDDocument doc = new PDDocument();
+
+                    if (doc.isEncrypted())
+                    {
+                        System.out.print("document in crypted, cannot be saved ... ");
+                    }
+                    try {
+                        doc.load(new File(downPath+"/samplePDF.pdf"));
+                        System.out.println("DONE.\nNumber of pages in the PDF is " + doc.getNumberOfPages());
+
+                        PDDocument document = PDDocument.load(new File(downPath+"/samplePDF.pdf"));
+                        PDFRenderer pdfRenderer = new PDFRenderer(document);
+
+                        for (int page = 0; page < document.getNumberOfPages(); ++page) {
+                            BufferedImage bim = pdfRenderer.renderImageWithDPI(page, 300, ImageType.RGB);
+                            File outputFile = new File(System.getProperty("user.dir") + "/src/main/DataFiles/" + page + "image.jpg");
+                            ImageIO.write(bim, "jpg", outputFile);
+                        }
+
+                        doc.close();
+                        document.close();
+                    } catch (Exception e) {
+                        System.out.println("FAILED.\n[" + e.getMessage() + "]");
+                    }
+
+                } catch (ConnectException ce) {
+                    System.out.println("FAILED.\n[" + ce.getMessage() + "]\n");
+                }
+            }
+
+        } catch (NullPointerException npe) {
+            System.out.println("FAILED.\n[" + npe.getMessage() + "]\n");
+        }
+
+
+        //document.close();
+        driver.close();
+    }
+
+    public static void downloadFileFromURL(String urlString, File destination) {
+        try {
+            URL website = new URL(urlString);
+            ReadableByteChannel rbc;
+            rbc = Channels.newChannel(website.openStream());
+            FileOutputStream fos = new FileOutputStream(destination);
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+            fos.close();
+            rbc.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void deleteFileWithExtension(String directory, String extension) throws IOException {
@@ -182,13 +285,28 @@ public class ScreenshotFromPdf {
         //System.setProperty("webdriver.chrome.driver","C:\\Users\\timok\\IdeaProjects\\chromedriver.exe");
         //WebDriver driver = new ChromeDriver();
 
+
+
         WebDriver driver = setChromeOptions(System.getProperty("user.dir") + "\\src\\main\\DataFiles");
 
-        /*
-        driver.get("http://www.vandevenbv.nl/dynamics/modules/SFIL0200/view.php?fil_Id=5515");
+
+        //driver.get("http://www.vandevenbv.nl/dynamics/modules/SFIL0200/view.php?fil_Id=5515");
+        driver.get("http://aplaidshirt.epizy.com/samplePDF.pdf");
+        Thread.sleep(3000);
         String url = driver.getCurrentUrl();
-        ScreenshotFromPdf.Pdf2Image(url, driver);
+        //URLEncoder.encode(url, "UTF-8");
+        //System.out.println(url);
+        String rep1 = url.replaceAll("[^a-zA-Z2-9-.-:-/-//]", "");
+        //System.out.println(rep1);
+        //System.out.println(rep1.substring(0, rep1.length() - 2));
+        String rep2 = rep1.substring(0, rep1.length() - 2);
+        /*
+        String destination = System.getProperty("user.dir") + "\\src\\main\\DataFiles\\samplePDF.pdf";
+        File dest = new File(destination);
+        downloadFileFromURL(url, dest);
+        ScreenshotFromPdf.Pdf2Image3(url, driver);
         */
+
 
         //save and download pdf file from disk
         driver.get("https://gofile.io/?c=WYPqpZ");
