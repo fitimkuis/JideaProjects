@@ -1,14 +1,16 @@
+import groovy.json.JsonSlurper;
+import org.json.simple.JSONObject;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 
-import org.json.simple.JSONObject;
-import groovy.json.JsonSlurper;
-
 public class FileCounter {
 
     public static String getEmailAddress(){
+
+        getLatestStableChromeDriver.executePowerShell();
 
         JSONObject obj = new JSONObject();
 
